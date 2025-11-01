@@ -53,29 +53,61 @@ class YouTubeScraper:
 
     def get_transcript(self, video_id: str, languages: List[str] = None) -> Optional[List[Dict]]:
         """
-        Get transcript for a video
+        Get transcript for a video (tries manual and auto-generated captions)
 
         Args:
             video_id: YouTube video ID
-            languages: List of language codes to try (default: ['en'])
+            languages: List of language codes to try (default: ['en', 'id'])
 
         Returns:
             List of transcript segments or None if unavailable
         """
         if languages is None:
-            languages = ['en']
+            languages = ['en', 'id']  # English and Indonesian
 
         try:
-            transcript = self.transcript_api.fetch(video_id, languages)
-            # Convert FetchedTranscriptSnippet objects to dictionaries
-            return [
-                {
-                    'text': segment.text,
-                    'start': segment.start,
-                    'duration': segment.duration
-                }
-                for segment in transcript
-            ]
+            # Try to get transcript list
+            transcript_list = self.transcript_api.list(video_id)
+
+            # Try manual transcripts first
+            for lang in languages:
+                try:
+                    transcript = transcript_list.find_manually_created_transcript([lang])
+                    segments = transcript.fetch()
+                    print(f"   ✓ Found {len(segments)} transcript segments (language: {lang}, manual)")
+                    # Convert FetchedTranscriptSnippet objects to dictionaries
+                    return [
+                        {
+                            'text': segment.text,
+                            'start': segment.start,
+                            'duration': segment.duration
+                        }
+                        for segment in segments
+                    ]
+                except:
+                    continue
+
+            # Try auto-generated transcripts
+            for lang in languages:
+                try:
+                    transcript = transcript_list.find_generated_transcript([lang])
+                    segments = transcript.fetch()
+                    print(f"   ✓ Found {len(segments)} transcript segments (language: {lang}, auto-generated)")
+                    # Convert FetchedTranscriptSnippet objects to dictionaries
+                    return [
+                        {
+                            'text': segment.text,
+                            'start': segment.start,
+                            'duration': segment.duration
+                        }
+                        for segment in segments
+                    ]
+                except:
+                    continue
+
+            print(f"   ⚠ No transcript available for video {video_id}")
+            return None
+
         except Exception as e:
             print(f"   ⚠ Transcript not available for video {video_id}: {str(e)[:50]}...")
             return None
