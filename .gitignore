@@ -32,12 +32,9 @@ ENV/
 *.swo
 *~
 
-# Output files
-output/
-*.json
-*.md
-!README.md
-!EXAMPLE_OUTPUT.md
+# Output files (tracked for analysis preservation)
+# output/  # Removed to track MASTER_ANALYSIS.md
+*.log
 
 # OS
 .DS_Store
